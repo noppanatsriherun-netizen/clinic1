@@ -1,0 +1,188 @@
+{% extends "public/base_public.html" %}
+{% load static %}
+
+{% block title %}ข่าวสารและกิจกรรม / News & Activities{% endblock %}
+
+{% block content %}
+<!-- ===== Page Header ===== -->
+<section class="page-hero" style="background: linear-gradient(135deg, #f8feff 0%, #ffffff 100%);">
+    <div class="container">
+        <h1 class="text-gradient">
+            {% if request.LANGUAGE_CODE == 'en' %}News & Activities{% else %}ข่าวสารและกิจกรรม{% endif %}
+        </h1>
+        <p>
+            {% if request.LANGUAGE_CODE == 'en' %}Stay updated with our latest stories and promotions.{% else %}ติดตามความเคลื่อนไหว โปรโมชัน และสาระน่ารู้จากเรา{% endif %}
+        </p>
+    </div>
+</section>
+
+<!-- ===== Category Filter ===== -->
+<div class="container">
+    <div class="filter-bar-wrapper">
+        <button class="filter-btn active" data-filter="all">
+            <i class="fas fa-th-large"></i> {% if request.LANGUAGE_CODE == 'en' %}All{% else %}ทั้งหมด{% endif %}
+        </button>
+        <button class="filter-btn" data-filter="โปรโมชั่น">
+            <i class="fas fa-percentage"></i> {% if request.LANGUAGE_CODE == 'en' %}Promotions{% else %}โปรโมชั่น{% endif %}
+        </button>
+        <button class="filter-btn" data-filter="กิจกรรม">
+            <i class="fas fa-calendar-star"></i> {% if request.LANGUAGE_CODE == 'en' %}Activities{% else %}กิจกรรม{% endif %}
+        </button>
+        <button class="filter-btn" data-filter="สาระน่ารู้">
+            <i class="fas fa-lightbulb"></i> {% if request.LANGUAGE_CODE == 'en' %}Knowledge{% else %}สาระน่ารู้{% endif %}
+        </button>
+    </div>
+</div>
+
+<div class="container" style="padding: 20px 20px 80px;">
+    {% if news_items %}
+    <div class="premium-news-grid" id="newsGrid">
+        {% for item in news_items %}
+        <article class="premium-news-card news-item" data-category="{{ item.category|default:'ทั่วไป' }}">
+            <div class="news-img-container">
+                {% if item.image_url %}
+                    <img src="{{ item.image_url }}" alt="{{ item.title_th }}">
+                {% else %}
+                    <div style="width:100%; height:100%; background:#f1f3f5; display:flex; align-items:center; justify-content:center; color:#ced4da;">
+                        <i class="fas fa-image fa-3x"></i>
+                    </div>
+                {% endif %}
+                <div class="news-badge">
+                    {% if request.LANGUAGE_CODE == 'en' %}{{ item.category_en|default:"General" }}{% else %}{{ item.category|default:"ทั่วไป" }}{% endif %}
+                </div>
+            </div>
+
+            <div class="news-content">
+                <div class="news-date">
+                    <i class="far fa-calendar-alt"></i> {{ item.created_at|date:"d M Y" }}
+                </div>
+                <h3 class="news-title">
+                    {{ item.title_th }}
+                </h3>
+                <p class="news-desc">
+                    {{ item.content_th|truncatechars:100 }}
+                </p>
+                <div style="margin-top: auto;">
+                    <button class="btn-hero-outline open-news-modal" 
+                            style="padding: 10px 20px; font-size: 14px; border-radius: 50px; cursor: pointer; background: transparent;"
+                            data-title="{{ item.title_th }}"
+                            data-content="{{ item.content_th }}"
+                            data-image="{{ item.image_url|default:'' }}"
+                            data-category="{{ item.category|default:'ทั่วไป' }}"
+                            data-date="{{ item.created_at|date:'d M Y' }}">
+                        {% if request.LANGUAGE_CODE == 'en' %}Read More{% else %}อ่านเพิ่มเติม{% endif %} <i class="fas fa-arrow-right" style="margin-left: 8px; font-size: 12px;"></i>
+                    </button>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 100px 0; color: #adb5bd;">
+        <i class="far fa-newspaper fa-4x" style="margin-bottom: 20px;"></i>
+        <h3>
+            {% if request.LANGUAGE_CODE == 'en' %}No news found.{% else %}ยังไม่มีข่าวสารในขณะนี้{% endif %}
+        </h3>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ===== News Detail Modal ===== -->
+<div class="news-modal" id="newsModal">
+    <div class="news-modal-overlay" id="modalOverlay"></div>
+    <div class="news-modal-container">
+        <div class="news-modal-close" id="modalClose">
+            <i class="fas fa-times"></i>
+        </div>
+        <div class="news-modal-header" id="modalHeader">
+            <img src="" alt="" id="modalImage">
+        </div>
+        <div class="news-modal-body">
+            <div class="news-modal-meta">
+                <span class="news-modal-category" id="modalCategory">{% if request.LANGUAGE_CODE == 'en' %}General{% else %}ทั่วไป{% endif %}</span>
+                <span class="news-modal-date" id="modalDate">
+                    <i class="far fa-calendar-alt"></i> 12 Apr 2026
+                </span>
+            </div>
+            <h2 class="news-modal-title" id="modalTitle">{% if request.LANGUAGE_CODE == 'en' %}News Title{% else %}หัวข้อข่าว{% endif %}</h2>
+            <div class="news-modal-text" id="modalContent">{% if request.LANGUAGE_CODE == 'en' %}News Content...{% else %}เนื้อหาข่าว...{% endif %}</div>
+        </div>
+    </div>
+</div>
+
+<!-- JS for Filtering & Modal -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Filtering Logic
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const newsItems = document.querySelectorAll('.news-item');
+
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const filterValue = btn.getAttribute('data-filter');
+
+            newsItems.forEach(item => {
+                const itemCat = item.getAttribute('data-category');
+                if (filterValue === 'all' || itemCat === filterValue) {
+                    item.style.display = 'flex';
+                    item.style.opacity = '0';
+                    setTimeout(() => {
+                        item.style.transition = 'opacity 0.4s ease';
+                        item.style.opacity = '1';
+                    }, 10);
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    // 2. Modal Logic
+    const modal = document.getElementById('newsModal');
+    const modalImage = document.getElementById('modalImage');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+    const modalCategory = document.getElementById('modalCategory');
+    const modalDate = document.getElementById('modalDate');
+    const modalHeader = document.getElementById('modalHeader');
+    
+    document.querySelectorAll('.open-news-modal').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const data = this.dataset;
+            
+            // Fill Data
+            modalTitle.innerText = data.title;
+            modalContent.innerText = data.content;
+            modalCategory.innerText = data.category;
+            modalDate.innerHTML = `<i class="far fa-calendar-alt"></i> ${data.date}`;
+            
+            if (data.image) {
+                modalImage.src = data.image;
+                modalHeader.style.display = 'block';
+            } else {
+                modalHeader.style.display = 'none';
+            }
+            
+            // Show Modal
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+            document.body.style.overflow = 'hidden'; // Prevent scroll
+        });
+    });
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        setTimeout(() => {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }, 300);
+    };
+
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('modalOverlay').addEventListener('click', closeModal);
+});
+</script>
+{% endblock %}

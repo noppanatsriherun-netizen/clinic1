@@ -1,0 +1,316 @@
+{% extends "public/base_public.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "ของฉัน" %}{% endblock %}
+
+{% block content %}
+<style>
+  .my-hero {
+    background: linear-gradient(135deg, #1B2A47 0%, #2C3E50 100%);
+    padding: 60px 0 40px;
+    color: white;
+    text-align: center;
+  }
+  .my-hero .avatar {
+    width: 90px; height: 90px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 38px;
+    margin: 0 auto 16px;
+    border: 3px solid rgba(255,255,255,0.5);
+  }
+  .my-hero h1 { font-size: 1.8rem; margin: 0 0 6px; font-weight: 700; }
+  .my-hero p  { opacity: 0.85; margin: 0; font-size: 0.95rem; }
+  .my-hero .info-pills {
+    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 20px;
+  }
+  .my-hero .pill {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 50px;
+    padding: 6px 18px;
+    font-size: 0.85rem;
+    backdrop-filter: blur(4px);
+  }
+
+  .my-section { max-width: 1000px; margin: 40px auto; padding: 0 24px; }
+  .my-section h2 {
+    font-size: 1.15rem; font-weight: 700;
+    color: #2d3748; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .my-section h2 i { color: #667eea; }
+
+  .pet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 18px;
+    margin-bottom: 42px;
+  }
+  .pet-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px 20px;
+    text-align: center;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    border: 1px solid #f0f0f0;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .pet-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+  .pet-card .pet-icon {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, #667eea22, #764ba222);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; margin: 0 auto 12px;
+  }
+  .pet-card .pet-name { font-weight: 700; font-size: 1.05rem; color: #2d3748; margin-bottom: 4px; }
+  .pet-card .pet-meta { font-size: 0.8rem; color: #888; line-height: 1.7; }
+  .pet-card .pet-age  { color: #667eea; font-weight: 600; font-size: 0.85rem; margin-top: 6px; }
+  .pet-card.inactive  { opacity: 0.5; }
+
+  .history-table th { background: #f7f8fc; font-size: 0.82rem; color: #555; }
+  .history-table td { font-size: 0.88rem; vertical-align: middle; }
+  .history-table { width: 100%; border-collapse: collapse; }
+  .history-table th, .history-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: left;
+  }
+  .history-table tr:last-child td { border-bottom: none; }
+  .card-wrap {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    border: 1px solid #f0f0f0;
+    overflow: hidden;
+    margin-bottom: 36px;
+  }
+
+  .empty-msg {
+    text-align: center; padding: 30px; color: #aaa;
+  }
+  .no-owner-box {
+    text-align: center; max-width: 440px; margin: 80px auto;
+    background: white; border-radius: 20px; padding: 48px 36px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  .no-owner-box .icon { font-size: 52px; margin-bottom: 16px; color: #667eea; }
+  .no-owner-box h2 { font-size: 1.3rem; margin-bottom: 10px; }
+  .no-owner-box p { color: #777; margin-bottom: 24px; }
+
+  .gender-M { color: #4299E1; }
+  .gender-F { color: #ED64A6; }
+</style>
+
+{% if not owner %}
+<!-- ยังไม่มีข้อมูล OWNER -->
+<div style="padding: 60px 24px;">
+  <div class="no-owner-box">
+    <div class="icon"><i class="fas fa-paw"></i></div>
+    <h2>{% trans "ยังไม่มีข้อมูลสัตว์เลี้ยง" %}</h2>
+    <p>{% trans "เริ่มต้นด้วยการจองคิวครั้งแรก" %}<br>{% trans "ระบบจะผูกข้อมูลสัตว์เลี้ยงเข้ากับ account ของคุณโดยอัตโนมัติครับ" %}</p>
+    <a href="{% url 'public_booking' %}" class="btn-hero btn-hero-primary" style="display:inline-block;">
+      <i class="fas fa-calendar-plus"></i> {% trans "จองคิวเลย" %}
+    </a>
+  </div>
+</div>
+
+{% else %}
+
+<!-- ===== Hero: ข้อมูลเจ้าของ ===== -->
+<div class="my-hero">
+  <div class="avatar"><i class="fas fa-user"></i></div>
+  <h1>{{ owner.first_name }} {{ owner.last_name }}</h1>
+  <p>{% trans "สมาชิกคลินิก" %}</p>
+  <div class="info-pills">
+    <span class="pill"><i class="fas fa-phone"></i> {{ owner.phone }}</span>
+    {% if owner.email %}
+    <span class="pill"><i class="fas fa-envelope"></i> {{ owner.email }}</span>
+    {% endif %}
+    <span class="pill"><i class="fas fa-paw"></i> {{ pets|length }} {% trans "สัตว์เลี้ยง" %}</span>
+  </div>
+</div>
+
+<div class="container my-section">
+
+  <!-- ===== สัตว์เลี้ยง ===== -->
+  <h2><i class="fas fa-paw"></i> {% trans "สัตว์เลี้ยงของฉัน" %}</h2>
+  {% if pets %}
+  <div class="pet-grid">
+    {% for pet in pets %}
+    <div class="pet-card {% if not pet.is_active %}inactive{% endif %}">
+      <div class="pet-icon">
+        {% if "แมว" in pet.species_name or "Cat" in pet.species_name %}🐱
+        {% elif "สุนัข" in pet.species_name or "Dog" in pet.species_name %}🐶
+        {% elif "กระต่าย" in pet.species_name %}🐰
+        {% elif "นก" in pet.species_name %}🐦
+        {% else %}🐾{% endif %}
+      </div>
+      <div class="pet-name">{{ pet.pet_name }}</div>
+      <div class="pet-meta">
+        {{ pet.species_name }}{% if pet.breed_name != '-' %} · {{ pet.breed_name }}{% endif %}<br>
+        {% if pet.gender == 'M' %}<span class="gender-M"><i class="fas fa-mars"></i> {% trans "ผู้" %}</span>
+        {% elif pet.gender == 'F' %}<span class="gender-F"><i class="fas fa-venus"></i> {% trans "เมีย" %}</span>
+        {% else %}{% trans "ไม่ระบุเพศ" %}{% endif %}
+        {% if pet.weight_kg %} · {{ pet.weight_kg }} {% trans "กก." %}{% endif %}
+      </div>
+      {% if pet.age_display %}
+      <div class="pet-age"><i class="fas fa-birthday-cake"></i> {{ pet.age_display }}</div>
+      {% endif %}
+      {% if not pet.is_active %}
+      <div style="font-size:0.75rem; color:#999; margin-top:6px;">({% trans "ปิดการใช้งาน" %})</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-msg"><i class="fas fa-paw" style="font-size:32px; opacity:.3; display:block; margin-bottom:8px;"></i>{% trans "ยังไม่มีข้อมูลสัตว์เลี้ยง" %}</div>
+  {% endif %}
+
+  <!-- ===== นัดหมาย ===== -->
+  <h2><i class="fas fa-calendar-alt"></i> {% trans "นัดหมายล่าสุด" %}</h2>
+  <div class="card-wrap">
+    {% if appointments %}
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>{% trans "วันที่" %}</th>
+          <th>{% trans "สัตว์เลี้ยง" %}</th>
+          <th>{% trans "สัตวแพทย์" %}</th>
+          <th>{% trans "สาเหตุ" %}</th>
+          <th>{% trans "สถานะ" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for appt in appointments %}
+        <tr>
+          <td>{{ appt.appt_datetime|date:"d/m/Y H:i" }}</td>
+          <td><strong>{{ appt.pet_name }}</strong></td>
+          <td>{{ appt.vet_name }}</td>
+          <td>{{ appt.reason|default:"-" }}</td>
+          <td>
+            {% if appt.status|lower == 'scheduled' %}<span style="color:#F6AD55; font-weight:600;">{% trans "รอยืนยัน" %}</span>
+            {% elif appt.status|lower == 'completed' %}<span style="color:#667eea; font-weight:600;">{% trans "เสร็จสิ้น" %}</span>
+            {% elif appt.status|lower == 'cancelled' %}<span style="color:#FC8181; font-weight:600;">{% trans "ยกเลิก" %}</span>
+            {% elif appt.status|lower == 'no-show' %}<span style="color:#718096; font-weight:600;">{% trans "ไม่มาตามนัด" %}</span>
+            {% else %}<span style="font-weight:600; color:#CBD5E0;">{{ appt.status|default:"-" }}</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-msg"><i class="fas fa-calendar-times" style="font-size:28px; opacity:.3; display:block; margin-bottom:8px;"></i>{% trans "ยังไม่มีประวัตินัดหมาย" %}</div>
+    {% endif %}
+  </div>
+
+  <!-- ===== ตารางวัคซีนถัดไป ===== -->
+  <h2><i class="fas fa-syringe"></i> {% trans "ตารางวัคซีนถัดไป / Vaccine Schedule" %}</h2>
+  {% if upcoming_vaccines %}
+  <div class="card-wrap" style="background: linear-gradient(to right, #ffffff, #f0f7ff);">
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>{% trans "วันที่ต้องรับ" %}</th>
+          <th>{% trans "สัตว์เลี้ยง" %}</th>
+          <th>{% trans "รายการวัคซีน" %}</th>
+          <th>{% trans "ระยะเวลา" %}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in upcoming_vaccines %}
+        <tr style="background: transparent;">
+          <td><strong style="color: #667eea;">{{ v.next_due_date|date:"d/m/Y" }}</strong></td>
+          <td>{{ v.pet_name }}</td>
+          <td><span style="background: rgba(102, 126, 234, 0.1); color: #667eea; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">{{ v.vaccine_name }}</span></td>
+          <td>
+            {% if v.days_left == 0 %}
+              <span style="color: #E53E3E; font-weight: 700;"><i class="fas fa-exclamation-circle"></i> {% trans "วันนี้!" %}</span>
+            {% elif v.days_left < 0 %}
+              <span style="color: #E53E3E; font-weight: 800;"><i class="fas fa-history"></i> {% trans "เลยกำหนดแล้ว!" %}</span>
+            {% elif v.days_left < 7 %}
+              <span style="color: #ED8936; font-weight: 600;">{% trans "อีก" %} {{ v.days_left }} {% trans "วัน" %}</span>
+            {% else %}
+              <span style="color: #48BB78;">{% trans "อีก" %} {{ v.days_left }} {% trans "วัน" %}</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            {% if v.appt_id %}
+              {% if v.days_left < 0 %}
+                <a href="{% url 'public_booking' %}?service=Vaccine" class="badge badge-primary" style="background: #3182CE; padding: 6px 12px; text-decoration: none;">
+                  {% trans "จองนัดใหม่" %} <i class="fas fa-calendar-plus" style="font-size: 0.7rem;"></i>
+                </a>
+              {% else %}
+                <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                  <span style="color: #48BB78; font-size: 0.85rem; font-weight: 600;">
+                    <i class="fas fa-check-circle"></i> {% trans "ยืนยันนัดแล้ว" %}
+                  </span>
+                  <small style="color: #718096; font-size: 0.7rem;">
+                    {% trans "โทรเลื่อนนัด" %}: <a href="tel:02-xxx-xxxx" style="color: #667eea; text-decoration: none; font-weight: 600;">02-xxx-xxxx</a>
+                  </small>
+                </div>
+              {% endif %}
+            {% else %}
+              <a href="{% url 'public_booking' %}?service=Vaccine" style="font-size: 0.8rem; font-weight: 600; color: #667eea; text-decoration: none;">
+                {% trans "จองคิว" %} <i class="fas fa-chevron-right" style="font-size: 0.7rem;"></i>
+              </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-wrap" style="margin-bottom: 30px;">
+    <div class="empty-msg" style="padding: 20px;">{% trans "ยังไม่มีกำหนดการวัคซีนถัดไป" %}</div>
+  </div>
+  {% endif %}
+
+  <!-- ===== บันทึกการรักษา (Medical Records) ===== -->
+  <h2><i class="fas fa-file-medical"></i> {% trans "บันทึกการรักษาล่าสุด" %}</h2>
+  <div class="card-wrap">
+    {% if medical_records %}
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th style="width: 120px;">{% trans "วันที่" %}</th>
+          <th style="width: 120px;">{% trans "สัตว์เลี้ยง" %}</th>
+          <th>{% trans "อาการ / การวินิจฉัย" %}</th>
+          <th>{% trans "การรักษา" %}</th>
+          <th style="width: 150px;">{% trans "สัตวแพทย์" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for mr in medical_records %}
+        <tr>
+          <td>{{ mr.visit_date|date:"d/m/Y" }}</td>
+          <td><strong>{{ mr.pet_name }}</strong></td>
+          <td>
+            <div style="font-weight: 600; color: #4A5568;">{{ mr.chief_complaint|default:"" }}</div>
+            <div style="font-size: 0.8rem; color: #718096; margin-top: 4px;">📂 {{ mr.diagnosis|default:"-" }}</div>
+          </td>
+          <td>{{ mr.treatment|default:"-" }}</td>
+          <td><i class="fas fa-user-md" style="color: #667eea; margin-right: 4px;"></i> {{ mr.vet_name }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-msg"><i class="fas fa-notes-medical" style="font-size:28px; opacity:.3; display:block; margin-bottom:8px;"></i>{% trans "ยังไม่มีบันทึกการรักษา" %}</div>
+    {% endif %}
+  </div>
+
+  <div style="text-align:center; margin-bottom: 48px;">
+    <a href="{% url 'public_booking' %}" class="btn-hero btn-hero-primary" style="display:inline-block;">
+      <i class="fas fa-calendar-plus"></i> {% trans "จองคิวใหม่" %}
+    </a>
+  </div>
+
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,262 @@
+{% extends "public/base_public.html" %}
+{% load static i18n %}
+{% block title %}{% trans "จองคิวนัดหมาย" %}{% endblock %}
+
+{% block content %}
+
+<!-- ===== Page Header ===== -->
+<section class="page-hero">
+  <div class="container">
+    <h1>{% trans "จองคิวนัดหมาย" %}</h1>
+    <p>{% trans "กรอกข้อมูลเพื่อนัดหมายเข้าใช้บริการ ทางคลินิกจะติดต่อกลับเพื่อยืนยันนัดหมาย" %}</p>
+  </div>
+</section>
+
+<!-- ===== Booking Form ===== -->
+<section class="section">
+  <div class="container">
+    <div class="booking-wrapper">
+
+      <!-- Success Message -->
+      {% if success %}
+      <div class="booking-success">
+        <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+        <h2>{% trans "นัดหมายสำเร็จ!" %}</h2>
+        <p>{% trans "ทางคลินิกได้รับข้อมูลการนัดหมายของคุณแล้ว" %}<br>{% trans "เราจะติดต่อกลับเพื่อยืนยันนัดหมายภายใน 24 ชั่วโมง" %}</p>
+        {% if user.is_authenticated and not user.is_staff %}
+          <a href="{% url 'my_page' %}" class="btn-hero btn-hero-primary" style="margin-top: 20px;">
+            <i class="fas fa-user-circle"></i> ดูข้อมูลสัตว์เลี้ยงของฉัน
+          </a>
+        {% else %}
+          <a href="{% url 'home' %}" class="btn-hero btn-hero-primary" style="margin-top: 20px;">
+            <i class="fas fa-home"></i> กลับหน้าแรก
+          </a>
+        {% endif %}
+      </div>
+      {% else %}
+
+      <div class="booking-form-card">
+        <div class="booking-form-header">
+          <i class="fas fa-calendar-check"></i>
+          <h2>{% trans "ข้อมูลการนัดหมาย" %}</h2>
+        </div>
+
+        {% if error %}
+        <div class="booking-alert">
+          <i class="fas fa-exclamation-circle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="">
+          {% csrf_token %}
+
+          <!-- ===== ข้อมูลเจ้าของ (ค้นหาจากเบอร์โทร) ===== -->
+          <div class="form-section">
+            <h3><i class="fas fa-user"></i> {% trans "ข้อมูลเจ้าของ" %}</h3>
+
+            <div class="booking-form-grid">
+              <div class="form-group-pub">
+                <label>{% trans "เบอร์โทรศัพท์" %} <span class="req">*</span></label>
+                <input type="text" name="phone" class="input-pub" placeholder="เช่น 0812345678"
+                       value="{% if owner %}{{ owner.phone }}{% else %}{{ form_data.phone|default:'' }}{% endif %}"
+                       required id="phoneInput"
+                       {% if owner %}readonly style="background:#f5f5f5; color:#666;"{% endif %}>
+                {% if owner %}<small class="input-hint" style="color:#667eea;"><i class="fas fa-lock"></i> {% trans "ดึงข้อมูลจาก account ของคุณอัตโนมัติ" %}</small>
+                {% else %}<small class="input-hint">{% trans "ถ้าเคยมาใช้บริการแล้ว ใส่เบอร์เดิมเพื่อดึงข้อมูลอัตโนมัติ" %}</small>{% endif %}
+              </div>
+
+              <div class="form-group-pub">
+                <label>ชื่อ <span class="req">*</span></label>
+                <input type="text" name="first_name" class="input-pub" placeholder="ชื่อ"
+                       value="{% if owner %}{{ owner.first_name }}{% else %}{{ form_data.first_name|default:'' }}{% endif %}"
+                       required {% if owner %}readonly style="background:#f5f5f5; color:#666;"{% endif %}>
+              </div>
+
+              <div class="form-group-pub">
+                <label>นามสกุล <span class="req">*</span></label>
+                <input type="text" name="last_name" class="input-pub" placeholder="นามสกุล"
+                       value="{% if owner %}{{ owner.last_name }}{% else %}{{ form_data.last_name|default:'' }}{% endif %}"
+                       required {% if owner %}readonly style="background:#f5f5f5; color:#666;"{% endif %}>
+              </div>
+
+              <div class="form-group-pub">
+                <label>{% trans "อีเมล" %}</label>
+                <input type="email" name="email" class="input-pub" placeholder="email@example.com"
+                       value="{% if owner %}{{ owner.email|default:'' }}{% else %}{{ form_data.email|default:'' }}{% endif %}"
+                       {% if owner and owner.email %}readonly style="background:#f5f5f5; color:#666;"{% endif %}>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== ข้อมูลสัตว์เลี้ยง ===== -->
+          <div class="form-section">
+            <h3><i class="fas fa-paw"></i> {% trans "ข้อมูลสัตว์เลี้ยง" %}</h3>
+
+            <div class="booking-form-grid">
+              <div class="form-group-pub">
+                <label>{% trans "ชื่อสัตว์เลี้ยง" %} <span class="req">*</span></label>
+                <input type="text" name="pet_name" class="input-pub" placeholder="เช่น บัดดี้"
+                       value="{{ form_data.pet_name|default:'' }}" required>
+              </div>
+
+              <!-- Gender Selection -->
+              <div class="form-group-pub full">
+                <label>{% trans "เพศ" %}</label>
+                <div class="gender-selection">
+                  <label class="gender-chip {% if form_data.gender == 'M' %}active{% endif %}" data-gender="M">
+                    <input type="radio" name="gender" value="M" {% if form_data.gender == 'M' %}checked{% endif %} onchange="updateGenderChips(this)">
+                    <i class="fas fa-mars" style="color: #4299e1;"></i> {% trans "เพศผู้" %}
+                  </label>
+                  <label class="gender-chip {% if form_data.gender == 'F' %}active{% endif %}" data-gender="F">
+                    <input type="radio" name="gender" value="F" {% if form_data.gender == 'F' %}checked{% endif %} onchange="updateGenderChips(this)">
+                    <i class="fas fa-venus" style="color: #ed64a6;"></i> {% trans "เพศเมีย" %}
+                  </label>
+                  <label class="gender-chip {% if not form_data.gender or form_data.gender == 'U' %}active{% endif %}" data-gender="U">
+                    <input type="radio" name="gender" value="U" {% if not form_data.gender or form_data.gender == 'U' %}checked{% endif %} onchange="updateGenderChips(this)">
+                    <i class="fas fa-question-circle" style="color: #a0aec0;"></i> {% trans "ไม่ระบุ" %}
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group-pub">
+                <label>{% trans "ชนิดสัตว์" %} <span class="req">*</span></label>
+                <select name="species_id" id="species_id" class="input-pub" required onchange="filterBreeds()">
+                  <option value="">-- {% trans "เลือกชนิดสัตว์" %} --</option>
+                  {% for sp in species %}
+                    <option value="{{ sp.species_id }}" {% if form_data.species_id == sp.species_id|stringformat:"d" %}selected{% endif %}>
+                      {{ sp.species_name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="form-group-pub">
+                <label>{% trans "สายพันธุ์" %}</label>
+                <select name="breed_id" id="breed_id" class="input-pub">
+                  <option value="">-- {% trans "ไม่ระบุ / ไม่ทราบ" %} --</option>
+                  {% for br in breeds %}
+                    <option value="{{ br.breed_id }}" data-species="{{ br.species_id }}" {% if form_data.breed_id == br.breed_id|stringformat:"d" %}selected{% endif %}>
+                      {{ br.breed_name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== เลือกบริการ + วันเวลา ===== -->
+          <div class="form-section">
+            <h3><i class="fas fa-stethoscope"></i> {% trans "เลือกบริการและวันนัด" %}</h3>
+
+            <div class="booking-form-grid">
+              <div class="form-group-pub">
+                <label>{% trans "บริการที่ต้องการ" %} <span class="req">*</span></label>
+                <select name="service_id" class="input-pub" required>
+                  <option value="">-- {% trans "เลือกบริการ" %} --</option>
+                  {% for svc in services %}
+                    <option value="{{ svc.service_id }}" {% if selected_service == svc.service_id|stringformat:"d" %}selected{% endif %}>
+                      {{ svc.service_name }} (฿{{ svc.price|floatformat:0 }})
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="form-group-pub">
+                <label>{% trans "สัตวแพทย์" %}</label>
+                <select name="vet_id" class="input-pub">
+                  <option value="">-- {% trans "ไม่ระบุ (ให้คลินิกจัด)" %} --</option>
+                  {% for vet in vets %}
+                    <option value="{{ vet.vet_id }}">
+                      {{ vet.first_name }} {{ vet.last_name }}{% if vet.specialization %} ({{ vet.specialization }}){% endif %}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="form-group-pub">
+                <label>{% trans "วันที่-เวลาที่ต้องการ" %} <span class="req">*</span></label>
+                <div style="display: flex; gap: 10px;">
+                  <input type="date" name="appt_date" class="input-pub" required style="flex: 1;"
+                         value="{{ form_data.appt_date|default:'' }}">
+                  <select name="appt_time" class="input-pub" required style="flex: 1;">
+                    <option value="">{% trans "กรุณาเลือกเวลา" %}</option>
+                    <optgroup label="{% trans 'ก่อนเที่ยง' %}">
+                      <option value="09:00:00" {% if form_data.appt_time == '09:00:00' %}selected{% endif %}>9:00 - 10:00</option>
+                      <option value="10:00:00" {% if form_data.appt_time == '10:00:00' %}selected{% endif %}>10:00 - 11:00</option>
+                      <option value="11:00:00" {% if form_data.appt_time == '11:00:00' %}selected{% endif %}>11:00 - 12:00</option>
+                    </optgroup>
+                    <optgroup label="{% trans 'หลังเที่ยง' %}">
+                      <option value="13:00:00" {% if form_data.appt_time == '13:00:00' %}selected{% endif %}>13:00 - 14:00</option>
+                      <option value="14:00:00" {% if form_data.appt_time == '14:00:00' %}selected{% endif %}>14:00 - 15:00</option>
+                      <option value="15:00:00" {% if form_data.appt_time == '15:00:00' %}selected{% endif %}>15:00 - 16:00</option>
+                    </optgroup>
+                    <optgroup label="{% trans 'ช่วงเย็น' %}">
+                      <option value="16:00:00" {% if form_data.appt_time == '16:00:00' %}selected{% endif %}>16:00 - 17:00</option>
+                      <option value="18:00:00" {% if form_data.appt_time == '18:00:00' %}selected{% endif %}>18:00 - 19:00</option>
+                      <option value="19:00:00" {% if form_data.appt_time == '19:00:00' %}selected{% endif %}>19:00 - 20:00</option>
+                    </optgroup>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group-pub full">
+                <label>{% trans "อาการ / เหตุผลนัด" %}</label>
+                <textarea name="reason" class="input-pub" rows="3"
+                          placeholder="เช่น น้องหมาไม่กินข้าว 2 วัน, ต้องการฉีดวัคซีนประจำปี">{{ form_data.reason|default:'' }}</textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="booking-form-actions">
+            <button type="submit" class="btn-hero btn-hero-primary btn-block">
+              <i class="fas fa-paper-plane"></i> {% trans "ยืนยันนัดหมาย" %}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterBreeds() {
+    var speciesId = document.getElementById('species_id').value;
+    var breedSelect = document.getElementById('breed_id');
+    var options = breedSelect.options;
+
+    if (breedSelect.selectedIndex > 0) {
+        var selectedItem = options[breedSelect.selectedIndex];
+        if (speciesId && selectedItem.getAttribute('data-species') !== speciesId) {
+            breedSelect.selectedIndex = 0;
+        }
+    }
+
+    for (var i = 1; i < options.length; i++) {
+        var opt = options[i];
+        if (!speciesId || opt.getAttribute('data-species') === speciesId) {
+            opt.style.display = '';
+        } else {
+            opt.style.display = 'none';
+        }
+    }
+}
+
+function updateGenderChips(input) {
+    const chips = document.querySelectorAll('.gender-chip');
+    chips.forEach(chip => chip.classList.remove('active'));
+    if (input.checked) {
+        input.parentElement.classList.add('active');
+    }
+}
+
+// Run on page load in case a species is already selected
+document.addEventListener('DOMContentLoaded', function() {
+    filterBreeds();
+});
+</script>
+{% endblock %}
